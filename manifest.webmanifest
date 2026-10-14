@@ -1,0 +1,17 @@
+{
+  "name": "영어 공부 루틴",
+  "short_name": "영어 루틴",
+  "description": "월–목 공부 기록, 하루 5문장 작문·말하기, 금–일 복습 체크",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F4F1",
+  "theme_color": "#F2F4F1",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>영어 공부 루틴</title>
+<meta name="description" content="월–목 공부 기록, 하루 5문장 작문·말하기, 금–일 복습 체크">
+<meta name="theme-color" content="#F2F4F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131714" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="영어 루틴">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: phone-first single column (max 720px). Week strip on top, four tabs, cards below. Mon–Thu = study (green), Fri–Sun = review (rust). */
+:root{
+  --bg:#F2F4F1; --card:#FFFFFF; --ink:#1B211D; --muted:#626B65; --line:#DDE2DD;
+  --accent:#2F6F5E; --accent-ink:#FFFFFF; --accent-soft:#E1EEE8;
+  --warn:#B4542D; --warn-soft:#F8E8DF; --done:#8A918C;
+  --font-display:"Gowun Batang","Apple SD Gothic Neo","Malgun Gothic",serif;
+  --font-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131714; --card:#1C221E; --ink:#E8ECE8; --muted:#9BA49E; --line:#2E3630;
+    --accent:#6FBFA6; --accent-ink:#0F1512; --accent-soft:#20322B;
+    --warn:#E48A62; --warn-soft:#3A2820; --done:#727A75; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131714; --card:#1C221E; --ink:#E8ECE8; --muted:#9BA49E; --line:#2E3630;
+  --accent:#6FBFA6; --accent-ink:#0F1512; --accent-soft:#20322B;
+  --warn:#E48A62; --warn-soft:#3A2820; --done:#727A75; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--font-body);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:20px 72px}
+header h1{font-family:var(--font-display);font-weight:700;font-size:26px;margin:0 0 2px;text-wrap:balance}
+header p{margin:0;color:var(--muted);font-size:14px}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:16px 0}
+.day{text-align:center;padding:8px 0;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:13px;color:var(--muted)}
+.day b{display:block;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
+.day.study{border-top:3px solid var(--accent)}
+.day.review{border-top:3px solid var(--warn)}
+.day.today{outline:2px solid var(--ink)}
+.day .n{font-size:11px}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-weight:600}
+.tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+.tabs button{flex:1 0 auto;background:none;border:0;padding:10px 12px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-color:var(--ink);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-family:var(--font-display);font-size:18px;margin:0 0 10px;text-wrap:balance}
+.card h3{font-size:14px;margin:14px 0 6px;color:var(--muted)}
+.lbl{font-size:13px;color:var(--muted);display:block;margin:10px 0 6px}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+textarea{min-height:64px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1 1 140px;min-width:0}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:10px 14px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn.danger{background:var(--warn);color:#fff;border-color:var(--warn)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:20px;padding:5px 12px;font-size:13px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip.add{border-style:dashed;font-weight:700;min-width:44px;font-size:16px;padding:3px 12px}
+ul.items{list-style:none;margin:0;padding:0}
+ul.items li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+ul.items li:first-child{border-top:0}
+.body{flex:1;min-width:0;word-break:break-word}
+.del{background:none;border:0;color:var(--muted);font-size:18px;line-height:1;padding:2px 6px;border-radius:6px;white-space:nowrap}
+.del.armed{background:var(--warn);color:#fff;font-size:13px;padding:4px 8px}
+li.checked .body{color:var(--done);text-decoration:line-through}
+input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
+.prog{height:10px;background:var(--line);border-radius:10px;overflow:hidden;margin:6px 0 4px}
+.prog i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.muted{color:var(--muted);font-size:13px}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.notice{background:var(--warn-soft);color:var(--ink);border-radius:10px;padding:10px 12px;margin-top:10px;font-size:14px}
+.prac .q{display:flex;gap:10px;align-items:flex-start;font-weight:600;margin-bottom:8px}
+.prac .num{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:13px}
+.prac .acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.prac .ans{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--accent-soft)}
+.prac .ans .en{font-weight:600;margin:2px 0 8px}
+.prac.done{border-color:var(--accent)}
+.prac.done .num{background:var(--accent);color:var(--accent-ink)}
+.btn.rec{background:var(--warn);color:#fff;border-color:var(--warn)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);max-width:calc(100% - 32px);padding:11px 16px;border-radius:12px;background:var(--ink);color:var(--bg);font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;text-align:center;z-index:9}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.sync{font-size:12px;color:var(--muted);margin-top:4px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>영어 공부 루틴</h1>
+    <p>월–목 공부 기록 · 금–일 복습</p>
+    <div class="sync" id="syncNote">기록을 불러오는 중…</div>
+  </header>
+
+  <div class="week" id="week"></div>
+  <div class="banner" id="banner" hidden></div>
+
+  <nav class="tabs">
+    <button data-tab="record" class="on">공부 기록</button>
+    <button data-tab="practice">작문·말하기</button>
+    <button data-tab="review">복습 체크</button>
+    <button data-tab="settings">설정</button>
+  </nav>
+
+  <!-- 기록 -->
+  <section id="tab-record">
+    <div class="card">
+      <h2>오늘 공부한 내용</h2>
+      <div id="weekendNote" class="muted" hidden style="margin-bottom:8px">오늘은 복습하는 날이에요. 빠뜨린 기록이 있으면 요일을 골라 추가하세요.</div>
+      <span class="lbl">요일</span>
+      <div class="chips" id="dayChips"></div>
+      <span class="lbl">공부한 것</span>
+      <button class="chip add" id="plusBtn" title="공부한 것 추가">+</button>
+      <div class="row" id="addRow" hidden style="margin-top:8px">
+        <input id="text" list="pastTexts" placeholder="예: 캘리의 루틴 D1~2" autocomplete="off" style="flex:3 1 200px">
+        <button class="btn" id="addBtn">추가</button>
+      </div>
+      <datalist id="pastTexts"></datalist>
+    </div>
+    <div class="card">
+      <h2 id="listTitle">기록</h2>
+      <ul class="items" id="dayList"></ul>
+    </div>
+  </section>
+
+  <!-- 작문·말하기 -->
+  <section id="tab-practice" hidden>
+    <div class="card">
+      <h2>오늘의 5문장 · Grammar in Use</h2>
+      <label class="lbl" for="unitSel">유닛</label>
+      <select id="unitSel"></select>
+      <div class="notice" id="unitConfirm" hidden>
+        <span>유닛을 바꾸면 오늘 쓴 답이 지워져요.</span>
+        <div class="btns"><button class="btn sm danger" id="unitYes">바꾸기</button><button class="btn ghost sm" id="unitNo">취소</button></div>
+      </div>
+      <div class="muted" id="unitInfo" style="margin-top:6px"></div>
+      <div class="prog"><i id="pracBar" style="width:0"></i></div>
+      <div class="muted" id="pracText"></div>
+    </div>
+    <div id="pracList"></div>
+    <p class="muted">🎤 말하기가 안 되면 입력칸을 누른 뒤 휴대폰 키보드의 마이크(음성 입력) 버튼으로 영어로 말해 보세요. 예시 답안은 정답이 아니라 하나의 예예요.</p>
+  </section>
+
+  <!-- 복습 -->
+  <section id="tab-review" hidden>
+    <div class="nav">
+      <button class="btn ghost sm" id="prevWeek">← 지난주</button>
+      <b id="weekLabel"></b>
+      <button class="btn ghost sm" id="nextWeek">다음주 →</button>
+    </div>
+    <div class="card">
+      <h2>이번 주 복습 진행률</h2>
+      <div class="prog"><i id="progBar" style="width:0"></i></div>
+      <div class="muted" id="progText"></div>
+      <div class="muted" style="margin-top:8px">금요일: 월·화 · 토요일: 수·목 · 일요일: 남은 것 전부</div>
+    </div>
+    <div id="reviewToday"></div>
+    <div id="reviewAll"></div>
+  </section>
+
+  <!-- 설정 -->
+  <section id="tab-settings" hidden>
+    <div class="card">
+      <h2>알림</h2>
+      <p class="muted" style="margin-top:0">시간을 정하고 캘린더 파일을 받아 휴대폰 캘린더에 추가하면, 앱을 닫아도 매주 그 시간에 알림이 와요.</p>
+      <div class="row">
+        <div><label class="lbl" for="studyTime">월–목 기록 알림</label><input type="time" id="studyTime"></div>
+        <div><label class="lbl" for="reviewTime">금–일 복습 알림</label><input type="time" id="reviewTime"></div>
+      </div>
+      <div class="btns">
+        <button class="btn" id="icsBtn">캘린더 알림 파일 받기 (.ics)</button>
+        <button class="btn ghost" id="permBtn" hidden>앱 알림 켜기</button>
+      </div>
+      <div class="muted" id="permState" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h2>백업</h2>
+      <p class="muted" style="margin-top:0" id="backupNote"></p>
+      <div class="btns">
+        <button class="btn ghost" id="exportBtn">백업 파일 저장</button>
+        <button class="btn ghost" id="importBtn">백업 불러오기</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+      </div>
+      <div class="notice" id="importConfirm" hidden>
+        <span id="importMsg"></span>
+        <div class="btns"><button class="btn sm danger" id="importYes">불러오기</button><button class="btn ghost sm" id="importNo">취소</button></div>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="giu-data.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const DAYS = ['일','월','화','수','목','금','토'];
+const LSKEY = 'english-routine-v1';
+const DEFAULT_SETTINGS = {studyTime:'21:00', reviewTime:'09:00'};
+
+// ---------- 날짜 ----------
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+function mondayOf(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const w = x.getDay(); return addDays(x, w===0 ? -6 : 1-w); }
+const md = d => `${d.getMonth()+1}/${d.getDate()}`;
+const today = () => new Date();
+const isStudyDay = d => d.getDay()>=1 && d.getDay()<=4;
+const isReviewDay = d => [5,6,0].includes(d.getDay());
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+let toastT;
+function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'), 2800); }
+
+// ---------- 상태 ----------
+let state = {entries:[], practice:{}, settings:{...DEFAULT_SETTINGS}};
+function normalize(s){
+  const o = {entries:[], practice:{}, settings:{...DEFAULT_SETTINGS}};
+  if(s && Array.isArray(s.entries)) o.entries = s.entries.filter(e => e && typeof e.date==='string' && typeof e.text==='string')
+    .map(e => ({id: String(e.id||newId()), date:e.date, text:(e.cat ? e.cat+' ' : '')+e.text, reviewed:!!e.reviewed, reviewedAt:e.reviewedAt||null}));
+  if(s && s.practice && typeof s.practice==='object') o.practice = s.practice;
+  if(s && s.settings){ if(/^\d\d:\d\d$/.test(s.settings.studyTime)) o.settings.studyTime = s.settings.studyTime; if(/^\d\d:\d\d$/.test(s.settings.reviewTime)) o.settings.reviewTime = s.settings.reviewTime; }
+  return o;
+}
+
+// ---------- 저장소: claude 계정(db)이 있으면 계정에, 없으면 이 브라우저에 ----------
+const Store = {mode:'loading', uid:null, db:null, written:{}, dirty:false, busy:false, timer:null};
+const monthOf = date => date.slice(0,7);
+
+function splitByMonth(){
+  const months = {};
+  const m = k => (months[k] = months[k] || {entries:[], practice:{}});
+  state.entries.forEach(e => m(monthOf(e.date)).entries.push(e));
+  Object.entries(state.practice).forEach(([d,p]) => { if(p && p.done && (p.done.some(Boolean) || (p.answers||[]).some(a => a && a.trim()))) m(monthOf(d)).practice[d] = p; });
+  return months;
+}
+function save(){
+  if(Store.mode==='local'){ try{ localStorage.setItem(LSKEY, JSON.stringify(state)); }catch(e){} return; }
+  if(Store.mode!=='db') return;
+  Store.dirty = true;
+  clearTimeout(Store.timer); Store.timer = setTimeout(flush, 600);
+}
+async function flush(){
+  if(Store.busy){ Store.timer = setTimeout(flush, 400); return; }
+  Store.busy = true; Store.dirty = false;
+  try{
+    const base = 'data/users/'+Store.uid;
+    const months = splitByMonth();
+    const keys = new Set([...Object.keys(months), ...Object.keys(Store.written).filter(k => k!=='profile')]);
+    for(const k of keys){
+      const body = months[k] || {entries:[], practice:{}};
+      const js = JSON.stringify(body);
+      if(Store.written[k] === js) continue;
+      await Store.db.doc(base+'/profile/months/'+k).set(body);
+      Store.written[k] = js;
+    }
+    const prof = JSON.stringify({settings: state.settings});
+    if(Store.written.profile !== prof){ await Store.db.doc(base+'/profile').set({settings: state.settings}); Store.written.profile = prof; }
+  }catch(e){
+    Store.dirty = true;
+    toast('저장하지 못했어요. 연결을 확인해 주세요. 잠시 후 다시 저장할게요.');
+    clearTimeout(Store.timer); Store.timer = setTimeout(flush, 5000);
+  }finally{ Store.busy = false; }
+}
+function startLocal(){
+  Store.mode = 'local';
+  try{ state = normalize(JSON.parse(localStorage.getItem(LSKEY))); }catch(e){ state = normalize(null); }
+  $('syncNote').textContent = '기록은 이 기기에만 저장돼요.';
+  $('backupNote').textContent = '기록은 이 브라우저에만 저장돼요. 다른 기기로 옮기려면 백업 파일을 쓰세요.';
+  renderAll(); checkReminders();
+}
+function startDb(db, uid){
+  Store.mode = 'db'; Store.db = db; Store.uid = uid;
+  const base = 'data/users/'+uid;
+  $('syncNote').textContent = 'claude 계정에 저장돼요 · 휴대폰과 PC에서 같은 기록을 봐요.';
+  $('backupNote').textContent = '기록은 claude 계정에 저장돼요. 따로 보관하고 싶을 때 백업 파일을 받아 두세요.';
+  let monthsMap = {}, profile = null, gotMonths = false;
+  const rebuild = () => {
+    if(Store.dirty || Store.busy) return; // 저장 중인 내 변경을 덮어쓰지 않기
+    const raw = {entries:[], practice:{}, settings: profile && profile.settings};
+    Object.values(monthsMap).forEach(b => { if(b){ (b.entries||[]).forEach(e => raw.entries.push(e)); Object.assign(raw.practice, b.practice||{}); } });
+    const keepToday = state.practice[ymd(today())];
+    state = normalize(raw);
+    if(keepToday && !state.practice[ymd(today())]) state.practice[ymd(today())] = keepToday;
+    renderAll();
+  };
+  db.doc(base+'/profile').onSnapshot(snap => {
+    profile = snap.exists ? snap.data() : null;
+    Store.written.profile = JSON.stringify({settings: normalize(profile).settings});
+    rebuild();
+  }, onDbError);
+  db.collection(base+'/profile/months').onSnapshot(snap => {
+    monthsMap = {};
+    snap.docs.forEach(d => { monthsMap[d.id] = d.data(); Store.written[d.id] = JSON.stringify({entries:(d.data()||{}).entries||[], practice:(d.data()||{}).practice||{}}); });
+    rebuild();
+    if(!gotMonths){ gotMonths = true; checkReminders(); }
+  }, onDbError);
+}
+function onDbError(){ $('syncNote').textContent = '계정 저장소에 연결하지 못했어요. 새로고침해 주세요.'; }
+async function initStore(){
+  let db = null, user = null, uid = null;
+  const api = window.claude;
+  if(api && typeof api.use === 'function'){
+    try{ [db, user] = await Promise.all([api.use('db'), api.use('user')]); }catch(e){ db = null; }
+  }
+  if(db && user){ try{ uid = await user.id(); }catch(e){ uid = null; } }
+  if(db && uid) startDb(db, uid); else startLocal();
+}
+
+// ---------- 파일 저장 (아티팩트에서는 downloads 기능, 로컬에서는 일반 다운로드) ----------
+async function download(name, text, type){
+  const api = window.claude;
+  let dl = null;
+  if(api && typeof api.use === 'function'){ try{ dl = await api.use('downloads'); }catch(e){ dl = null; } }
+  if(dl){
+    try{ const r = await dl.save({filename:name, data:new Blob([text],{type})}); if(r && r.status==='saved') toast('파일을 저장했어요.'); }
+    catch(e){ if(e && e.code!=='cancelled' && e.code!=='declined') toast('파일을 저장하지 못했어요.'); }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text],{type}));
+  a.download = name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+// ---------- 공통 ----------
+let selDate = (() => { const t = today(); return isStudyDay(t) ? ymd(t) : ymd(addDays(mondayOf(t),3)); })();
+let viewMonday = mondayOf(today());
+const entriesOn = date => state.entries.filter(e => e.date === date);
+const weekStudyDates = mon => [0,1,2,3].map(i => ymd(addDays(mon,i)));
+
+function renderWeek(){
+  const mon = mondayOf(today()), t = ymd(today()), el = $('week');
+  el.innerHTML = '';
+  for(let i=0;i<7;i++){
+    const d = addDays(mon,i), s = ymd(d);
+    const div = document.createElement('div');
+    div.className = 'day ' + (i<4 ? 'study':'review') + (s===t ? ' today':'');
+    div.innerHTML = `${DAYS[d.getDay()]}<b>${d.getDate()}</b><span class="n">${i<4 ? entriesOn(s).length+'개' : '복습'}</span>`;
+    el.appendChild(div);
+  }
+}
+
+// 두 번 눌러야 지워지는 삭제 버튼 (아티팩트에서는 confirm 창이 안 떠요)
+function armDelete(btn, onConfirm){
+  btn.onclick = () => {
+    if(btn.classList.contains('armed')){ onConfirm(); return; }
+    btn.classList.add('armed'); btn.textContent = '삭제';
+    setTimeout(() => { btn.classList.remove('armed'); btn.textContent = '×'; }, 3000);
+  };
+}
+
+// ---------- 기록 탭 ----------
+function renderRecord(){
+  $('weekendNote').hidden = !isReviewDay(today());
+  const dc = $('dayChips'); dc.innerHTML = '';
+  weekStudyDates(mondayOf(today())).forEach(s => {
+    const d = parse(s), b = document.createElement('button');
+    b.className = 'chip' + (s===selDate ? ' on':'');
+    b.textContent = `${DAYS[d.getDay()]} ${md(d)}`;
+    b.onclick = () => { selDate = s; renderRecord(); };
+    dc.appendChild(b);
+  });
+  const dl = $('pastTexts'); dl.innerHTML = '';
+  [...new Set(state.entries.slice().reverse().map(e => e.text))].slice(0,30).forEach(t => {
+    const o = document.createElement('option'); o.value = t; dl.appendChild(o);
+  });
+  const d = parse(selDate), list = entriesOn(selDate);
+  $('listTitle').textContent = `${DAYS[d.getDay()]}요일 (${md(d)}) 기록 · ${list.length}개`;
+  const ul = $('dayList'); ul.innerHTML = '';
+  if(!list.length){ ul.innerHTML = '<li class="empty">아직 기록이 없어요. + 를 눌러 오늘 공부한 것을 적어 보세요.</li>'; return; }
+  list.forEach(e => {
+    const li = document.createElement('li');
+    li.innerHTML = `<div class="body"></div><button class="del" title="삭제">×</button>`;
+    li.querySelector('.body').textContent = e.text;
+    armDelete(li.querySelector('.del'), () => { state.entries = state.entries.filter(x => x.id !== e.id); save(); renderAll(); });
+    ul.appendChild(li);
+  });
+}
+$('plusBtn').onclick = () => { const r = $('addRow'); r.hidden = !r.hidden; if(!r.hidden) $('text').focus(); };
+$('addBtn').onclick = () => {
+  const text = $('text').value.trim();
+  if(!text){ $('text').focus(); return; }
+  state.entries.push({id:newId(), date:selDate, text, reviewed:false, reviewedAt:null});
+  save(); $('text').value = ''; $('addRow').hidden = true; renderAll();
+  toast('기록했어요.');
+};
+$('text').addEventListener('keydown', e => { if(e.key==='Enter' && !e.isComposing) $('addBtn').click(); });
+
+// ---------- 복습 탭 ----------
+function todaysReviewDates(mon){
+  const t = today(); if(ymd(mondayOf(t)) !== ymd(mon)) return null;
+  const dates = weekStudyDates(mon), w = t.getDay();
+  return w===5 ? dates.slice(0,2) : w===6 ? dates.slice(2,4) : w===0 ? dates : null;
+}
+function itemLi(e){
+  const li = document.createElement('li');
+  if(e.reviewed) li.classList.add('checked');
+  li.innerHTML = `<input type="checkbox"><div class="body"></div>`;
+  const cb = li.querySelector('input'); cb.checked = e.reviewed;
+  cb.setAttribute('aria-label', e.text + ' 복습 완료');
+  cb.onchange = () => { e.reviewed = cb.checked; e.reviewedAt = cb.checked ? ymd(today()) : null; save(); renderAll(); };
+  li.querySelector('.body').textContent = e.text;
+  return li;
+}
+function renderReview(){
+  const mon = viewMonday, dates = weekStudyDates(mon);
+  $('weekLabel').textContent = `${md(mon)} – ${md(addDays(mon,6))}`;
+  const all = state.entries.filter(e => dates.includes(e.date)), done = all.filter(e => e.reviewed).length;
+  const pct = all.length ? Math.round(done/all.length*100) : 0;
+  $('progBar').style.width = pct+'%';
+  $('progText').textContent = all.length ? `${done} / ${all.length} 복습 완료 (${pct}%)` : '이 주에는 기록이 없어요.';
+  const tb = $('reviewToday'); tb.innerHTML = '';
+  const td = todaysReviewDates(mon);
+  if(td){
+    const items = state.entries.filter(e => td.includes(e.date) && (!e.reviewed || e.reviewedAt===ymd(today())));
+    const card = document.createElement('div'); card.className = 'card'; card.style.borderColor = 'var(--warn)';
+    const label = today().getDay()===0 ? '남은 것 전부' : td.map(s => DAYS[parse(s).getDay()]).join('·')+'요일 분량';
+    card.innerHTML = `<h2>오늘 할 복습 · ${label}</h2>`;
+    const ul = document.createElement('ul'); ul.className = 'items';
+    if(!items.length) ul.innerHTML = '<li class="empty">오늘 분량 끝! 👏</li>';
+    items.forEach(e => ul.appendChild(itemLi(e)));
+    card.appendChild(ul); tb.appendChild(card);
+  }
+  const box = $('reviewAll'); box.innerHTML = '';
+  const card = document.createElement('div'); card.className = 'card';
+  card.innerHTML = '<h2>요일별 전체</h2>';
+  dates.forEach(s => {
+    const d = parse(s), list = entriesOn(s);
+    const h = document.createElement('h3');
+    h.textContent = `${DAYS[d.getDay()]}요일 ${md(d)} · ${list.filter(e=>e.reviewed).length}/${list.length}`;
+    card.appendChild(h);
+    const ul = document.createElement('ul'); ul.className = 'items';
+    if(!list.length) ul.innerHTML = '<li class="empty">기록 없음</li>';
+    list.forEach(e => ul.appendChild(itemLi(e)));
+    card.appendChild(ul);
+  });
+  box.appendChild(card);
+}
+$('prevWeek').onclick = () => { viewMonday = addDays(viewMonday,-7); renderReview(); };
+$('nextWeek').onclick = () => { viewMonday = addDays(viewMonday,7); renderReview(); };
+
+// ---------- 배너 & 브라우저 알림 (PC에서 열어 둘 때) ----------
+const unreviewedThisWeek = () => { const ds = weekStudyDates(mondayOf(today())); return state.entries.filter(e => ds.includes(e.date) && !e.reviewed).length; };
+function renderBanner(){
+  const t = today(), b = $('banner'); let msg = '';
+  if(isReviewDay(t)){
+    const n = unreviewedThisWeek();
+    msg = n ? `📚 복습하는 날이에요! 이번 주 남은 복습 ${n}개` : (t.getDay()===0 && state.entries.length ? '🎉 이번 주 복습을 모두 끝냈어요!' : '');
+  } else if(Store.mode!=='loading' && !entriesOn(ymd(t)).length){
+    msg = '✏️ 오늘 공부한 내용을 아직 기록하지 않았어요.';
+  }
+  b.textContent = msg; b.hidden = !msg;
+}
+async function notify(title, body){
+  try{
+    if(!('Notification' in window) || Notification.permission!=='granted') return;
+    // 설치한 앱(서비스 워커)에서는 이 방식이어야 휴대폰에서도 알림이 떠요
+    const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    if(reg) reg.showNotification(title, {body, icon:'icons/icon-192.png'});
+    else new Notification(title, {body});
+  }catch(e){}
+}
+const notified = {};
+function checkReminders(){
+  if(Store.mode==='loading') return;
+  const t = today(), s = ymd(t), hm = `${pad(t.getHours())}:${pad(t.getMinutes())}`;
+  if(isReviewDay(t) && hm >= state.settings.reviewTime && notified.review !== s){
+    notified.review = s; const n = unreviewedThisWeek(); if(n) notify('영어 복습 시간이에요 📚', `이번 주 남은 복습 ${n}개`);
+  }
+  if(isStudyDay(t) && hm >= state.settings.studyTime && notified.study !== s){
+    notified.study = s; if(!entriesOn(s).length) notify('오늘 영어 공부 기록했나요? ✏️','오늘 공부한 내용을 기록해 주세요.');
+  }
+  renderBanner();
+}
+
+// ---------- 설정 탭 ----------
+function renderSettings(){
+  if(document.activeElement !== $('studyTime')) $('studyTime').value = state.settings.studyTime;
+  if(document.activeElement !== $('reviewTime')) $('reviewTime').value = state.settings.reviewTime;
+  const has = 'Notification' in window && location.protocol === 'https:';
+  $('permBtn').hidden = !has || Notification.permission === 'granted';
+  $('permState').textContent = !has ? '' : Notification.permission === 'granted' ? '앱 알림 켜짐 ✅ 앱을 열어 둔 상태에서 정한 시간에 알림이 와요.'
+    : Notification.permission === 'denied' ? '앱 알림이 차단돼 있어요. 휴대폰 설정 → 앱/사이트 알림에서 허용해 주세요.' : '';
+}
+$('permBtn').onclick = async () => { try{ await Notification.requestPermission(); }catch(e){} renderSettings(); };
+['studyTime','reviewTime'].forEach(id => $(id).onchange = e => { if(e.target.value){ state.settings[id] = e.target.value; save(); toast('알림 시간을 바꿨어요. 캘린더 파일을 다시 받아 주세요.'); } });
+$('icsBtn').onclick = () => {
+  const mon = mondayOf(today());
+  const stamp = new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z';
+  const ev = (uid, first, time, days, title, desc) => {
+    const [h,m] = time.split(':'), d = first.replace(/-/g,'');
+    return ['BEGIN:VEVENT',`UID:${uid}@english-routine`,`DTSTAMP:${stamp}`,`DTSTART:${d}T${h}${m}00`,'DURATION:PT30M',
+      `RRULE:FREQ=WEEKLY;BYDAY=${days}`,`SUMMARY:${title}`,`DESCRIPTION:${desc}`,
+      'BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${title}`,'TRIGGER:PT0M','END:VALARM','END:VEVENT'].join('\r\n');
+  };
+  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//english-routine//KO','CALSCALE:GREGORIAN',
+    ev('study', ymd(mon), state.settings.studyTime, 'MO,TU,WE,TH', '✏️ 영어 공부 기록하기', '오늘 공부한 내용을 앱에 기록하세요.'),
+    ev('review', ymd(addDays(mon,4)), state.settings.reviewTime, 'FR,SA,SU', '📚 영어 복습하기', '금: 월·화 / 토: 수·목 / 일: 남은 것 전부'),
+    'END:VCALENDAR'].join('\r\n');
+  download('english-routine-alarm.ics', ics, 'text/calendar');
+};
+$('exportBtn').onclick = () => download(`english-routine-backup-${ymd(today())}.json`, JSON.stringify(state,null,2), 'application/json');
+let importData = null;
+$('importBtn').onclick = () => $('importFile').click();
+$('importFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  try{
+    const data = JSON.parse(await f.text());
+    if(!Array.isArray(data.entries)) throw 0;
+    importData = normalize(data);
+    $('importMsg').textContent = `기록 ${importData.entries.length}개를 불러올까요? 지금 기록은 백업 파일 내용으로 바뀌어요.`;
+    $('importConfirm').hidden = false;
+  }catch(_){ toast('올바른 백업 파일이 아니에요.'); }
+};
+$('importYes').onclick = () => { if(importData){ state = importData; importData = null; save(); renderAll(); toast('백업을 불러왔어요.'); } $('importConfirm').hidden = true; };
+$('importNo').onclick = () => { importData = null; $('importConfirm').hidden = true; };
+
+// ---------- 탭 ----------
+function showTab(name){
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab===name));
+  ['record','practice','review','settings'].forEach(t => $('tab-'+t).hidden = t!==name);
+  try{ sessionStorage.setItem('er-tab', name); }catch(e){}
+}
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+// ---------- 작문·말하기 탭 ----------
+const GIU = window.GIU_PRACTICE || [];
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, recIdx = -1, pendingUnit = null;
+const blank = () => ({answers:['','','','',''], done:[false,false,false,false,false]});
+
+function pracToday(){
+  const s = ymd(today());
+  if(!state.practice[s]){
+    const past = Object.keys(state.practice).filter(k => k < s).sort();
+    const last = past.length ? state.practice[past[past.length-1]] : null;
+    const unit = last ? (last.done.every(Boolean) ? Math.min(last.unit+1, GIU.length) : last.unit) : 1;
+    state.practice[s] = {unit, ...blank()};
+  }
+  return state.practice[s];
+}
+function logPractice(p){
+  if(!isStudyDay(today())) return;
+  const u = GIU[p.unit-1]; if(!u) return;
+  const text = `GIU Unit ${u[0]} 작문·말하기 5문장`, s = ymd(today());
+  if(!state.entries.some(e => e.date===s && e.text===text)) state.entries.push({id:newId(), date:s, text, reviewed:false, reviewedAt:null});
+}
+function stopRec(){ if(rec){ try{ rec.stop(); }catch(e){} } }
+function micFallback(ta){ ta.focus(); toast('이 화면에서는 🎤를 쓸 수 없어요. 키보드의 마이크 버튼으로 말해 보세요.'); }
+function startRec(i, ta, btn){
+  if(!SR){ micFallback(ta); return; }
+  if(rec && recIdx===i){ stopRec(); return; }
+  stopRec();
+  let r;
+  try{ r = new SR(); }catch(e){ micFallback(ta); return; }
+  rec = r; recIdx = i;
+  r.lang = 'en-US'; r.interimResults = true; r.continuous = false;
+  const base = ta.value ? ta.value.trim()+' ' : '';
+  btn.textContent = '⏹ 그만'; btn.classList.add('rec');
+  r.onresult = ev => { let t = ''; for(const x of ev.results) t += x[0].transcript; ta.value = base + t; };
+  r.onerror = ev => { if(['not-allowed','service-not-allowed','audio-capture','network'].includes(ev.error)) micFallback(ta); };
+  r.onend = () => {
+    btn.textContent = '🎤 말하기'; btn.classList.remove('rec');
+    const p = pracToday(); p.answers[i] = ta.value; save();
+    rec = null; recIdx = -1;
+  };
+  try{ r.start(); }catch(e){ rec = null; micFallback(ta); }
+}
+function speak(text){
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.split(' / ')[0]); u.lang = 'en-US'; u.rate = 0.9;
+    speechSynthesis.speak(u);
+  }catch(e){ toast('이 화면에서는 소리를 재생할 수 없어요.'); }
+}
+function renderPractice(){
+  const sel = $('unitSel');
+  if(!GIU.length){ $('unitInfo').textContent = '연습 문장 파일을 불러오지 못했어요.'; return; }
+  const p = pracToday();
+  if(!sel.options.length){
+    GIU.forEach(u => { const o = document.createElement('option'); o.value = u[0]; o.textContent = `Unit ${u[0]}. ${u[1]}`; sel.appendChild(o); });
+    sel.onchange = () => {
+      const q = pracToday(), v = +sel.value;
+      if(q.done.some(Boolean) || q.answers.some(a => a.trim())){ pendingUnit = v; $('unitConfirm').hidden = false; sel.value = q.unit; return; }
+      Object.assign(q, {unit:v}, blank()); save(); renderPractice();
+    };
+    $('unitYes').onclick = () => { if(pendingUnit){ Object.assign(pracToday(), {unit:pendingUnit}, blank()); pendingUnit = null; save(); } $('unitConfirm').hidden = true; renderAll(); };
+    $('unitNo').onclick = () => { pendingUnit = null; $('unitConfirm').hidden = true; };
+  }
+  sel.value = p.unit;
+  const u = GIU[p.unit-1];
+  $('unitInfo').textContent = `${u[2]} · 한국어 문장을 영어로 쓰거나 말해 보세요.`;
+  const n = p.done.filter(Boolean).length;
+  $('pracBar').style.width = (n/5*100)+'%';
+  $('pracText').textContent = n===5 ? '오늘 5문장 완료! 🎉' + (isStudyDay(today()) ? ' 공부 기록에도 추가했어요.' : '') : `${n} / 5 완료`;
+  const box = $('pracList');
+  if(box.contains(document.activeElement) && document.activeElement.tagName==='TEXTAREA') return; // 입력 중엔 다시 그리지 않기
+  box.innerHTML = '';
+  u[3].forEach(([ko, en], i) => {
+    const card = document.createElement('div'); card.className = 'card prac' + (p.done[i] ? ' done' : '');
+    card.innerHTML = `
+      <div class="q"><span class="num">${i+1}</span><span class="ko"></span></div>
+      <textarea id="ans-${i}" lang="en" autocapitalize="sentences" spellcheck="true" placeholder="영어로 쓰거나 🎤로 말해 보세요"></textarea>
+      <div class="acts">
+        <button class="btn ghost sm mic">🎤 말하기</button>
+        <button class="btn sm chk">${p.done[i] ? '다시 하기' : '확인'}</button>
+      </div>
+      <div class="ans" ${p.done[i] ? '' : 'hidden'}>
+        <div class="muted">예시 답안</div>
+        <div class="en"></div>
+        <button class="btn ghost sm lis">🔊 듣기</button>
+      </div>`;
+    card.querySelector('.ko').textContent = ko;
+    card.querySelector('.en').textContent = en;
+    const ta = card.querySelector('textarea'); ta.value = p.answers[i] || '';
+    ta.oninput = () => { p.answers[i] = ta.value; save(); };
+    card.querySelector('.mic').onclick = e => startRec(i, ta, e.currentTarget);
+    card.querySelector('.lis').onclick = () => speak(en);
+    card.querySelector('.chk').onclick = () => {
+      stopRec();
+      if(p.done[i]) p.done[i] = false;
+      else {
+        if(!ta.value.trim()){ ta.focus(); toast('먼저 영어로 써 보거나 말해 보세요.'); return; }
+        p.done[i] = true;
+        if(p.done.every(Boolean)) logPractice(p);
+      }
+      save(); ta.blur(); renderAll();
+    };
+    box.appendChild(card);
+  });
+}
+
+function renderAll(){ renderWeek(); renderRecord(); renderPractice(); renderReview(); renderSettings(); renderBanner(); }
+
+// ---------- 시작 ----------
+renderAll();
+let startTab = isReviewDay(today()) ? 'review' : 'record';
+try{ startTab = sessionStorage.getItem('er-tab') || startTab; }catch(e){}
+showTab(startTab);
+initStore();
+setInterval(checkReminders, 60*1000);
+})();
+</script>
+
+<div class="notice" id="update" hidden style="position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:10;display:flex;gap:10px;align-items:center;justify-content:space-between;box-shadow:0 6px 20px rgba(0,0,0,.15)">
+  <span>새 버전이 준비됐어요.</span>
+  <button class="btn sm" id="updateBtn">지금 적용</button>
+</div>
+<script>
+// 오프라인 실행과 새 버전 안내
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  let waiting = null;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      const offer = w => { if (w && navigator.serviceWorker.controller) { waiting = w; document.getElementById('update').hidden = false; } };
+      offer(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const w = reg.installing;
+        w && w.addEventListener('statechange', () => { if (w.state === 'installed') offer(w); });
+      });
+    }).catch(() => {});
+  });
+  document.getElementById('updateBtn').onclick = () => { if (waiting) waiting.postMessage({type: 'SKIP_WAITING'}); };
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloaded) { reloaded = true; location.reload(); } });
+}
+</script>
+</body>
+</html>
