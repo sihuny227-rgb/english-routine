@@ -76,6 +76,14 @@ textarea{min-height:64px;resize:vertical}
 .chip{border:1px solid var(--line);background:var(--bg);border-radius:20px;padding:5px 12px;font-size:13px}
 .chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .chip.add{border-style:dashed;font-weight:700;min-width:44px;font-size:16px;padding:3px 12px}
+.book .nm{font-weight:600}
+.book .sub{color:var(--muted);font-size:13px}
+.rounds{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:12px;color:var(--muted)}
+.rounds i{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--accent)}
+.rounds i.on{background:var(--accent)}
+.book .acts{display:flex;gap:6px;flex:none;align-items:center}
+.bk{display:inline-block;font-size:12px;background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 7px;margin-right:6px;vertical-align:1px}
+.rd{color:var(--muted);font-size:12px;margin-left:6px;white-space:nowrap}
 ul.items{list-style:none;margin:0;padding:0}
 ul.items li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
 ul.items li:first-child{border-top:0}
@@ -124,16 +132,26 @@ input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--ac
   <!-- 기록 -->
   <section id="tab-record">
     <div class="card">
+      <h2>공부 중인 책</h2>
+      <ul class="items" id="bookList"></ul>
+      <div class="row" style="margin-top:10px">
+        <input id="bookName" placeholder="책 이름 (예: 캘리의 루틴)" autocomplete="off" style="flex:3 1 200px">
+        <button class="btn ghost" id="bookAdd">책 추가</button>
+      </div>
+    </div>
+    <div class="card">
       <h2>오늘 공부한 내용</h2>
       <div id="weekendNote" class="muted" hidden style="margin-bottom:8px">오늘은 복습하는 날이에요. 빠뜨린 기록이 있으면 요일을 골라 추가하세요.</div>
       <span class="lbl">요일</span>
       <div class="chips" id="dayChips"></div>
-      <span class="lbl">공부한 것</span>
-      <button class="chip add" id="plusBtn" title="공부한 것 추가">+</button>
-      <div class="row" id="addRow" hidden style="margin-top:8px">
-        <input id="text" list="pastTexts" placeholder="예: 캘리의 루틴 D1~2" autocomplete="off" style="flex:3 1 200px">
+      <span class="lbl">책</span>
+      <div class="chips" id="bookChips"></div>
+      <label class="lbl" for="text">공부한 내용</label>
+      <div class="row">
+        <input id="text" list="pastTexts" placeholder="예: D1~2" autocomplete="off" style="flex:3 1 200px">
         <button class="btn" id="addBtn">추가</button>
       </div>
+      <div class="muted" id="lastHint" style="margin-top:6px"></div>
       <datalist id="pastTexts"></datalist>
     </div>
     <div class="card">
@@ -234,11 +252,17 @@ let toastT;
 function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'), 2800); }
 
 // ---------- 상태 ----------
-let state = {entries:[], practice:{}, settings:{...DEFAULT_SETTINGS}};
+let state = {entries:[], books:[], practice:{}, settings:{...DEFAULT_SETTINGS}};
 function normalize(s){
-  const o = {entries:[], practice:{}, settings:{...DEFAULT_SETTINGS}};
+  const o = {entries:[], books:[], practice:{}, settings:{...DEFAULT_SETTINGS}};
+  if(s && Array.isArray(s.books)) o.books = s.books.filter(b => b && typeof b.name==='string' && b.name.trim())
+    .map(b => ({id:String(b.id||newId()), name:b.name.trim(), done:Math.max(0, parseInt(b.done)||0)}));
   if(s && Array.isArray(s.entries)) o.entries = s.entries.filter(e => e && typeof e.date==='string' && typeof e.text==='string')
-    .map(e => ({id: String(e.id||newId()), date:e.date, text:(e.cat ? e.cat+' ' : '')+e.text, reviewed:!!e.reviewed, reviewedAt:e.reviewedAt||null}));
+    .map(e => {
+      const x = {id: String(e.id||newId()), date:e.date, text:(e.cat ? e.cat+' ' : '')+e.text, reviewed:!!e.reviewed, reviewedAt:e.reviewedAt||null};
+      if(e.bookId){ x.bookId = String(e.bookId); x.book = String(e.book||''); x.round = Math.max(1, parseInt(e.round)||1); }
+      return x;
+    });
   if(s && s.practice && typeof s.practice==='object') o.practice = s.practice;
   if(s && s.settings){ if(/^\d\d:\d\d$/.test(s.settings.studyTime)) o.settings.studyTime = s.settings.studyTime; if(/^\d\d:\d\d$/.test(s.settings.reviewTime)) o.settings.reviewTime = s.settings.reviewTime; }
   return o;
@@ -275,8 +299,9 @@ async function flush(){
       await Store.db.doc(base+'/profile/months/'+k).set(body);
       Store.written[k] = js;
     }
-    const prof = JSON.stringify({settings: state.settings});
-    if(Store.written.profile !== prof){ await Store.db.doc(base+'/profile').set({settings: state.settings}); Store.written.profile = prof; }
+    const profBody = {settings: state.settings, books: state.books};
+    const prof = JSON.stringify(profBody);
+    if(Store.written.profile !== prof){ await Store.db.doc(base+'/profile').set(profBody); Store.written.profile = prof; }
   }catch(e){
     Store.dirty = true;
     toast('저장하지 못했어요. 연결을 확인해 주세요. 잠시 후 다시 저장할게요.');
@@ -298,7 +323,7 @@ function startDb(db, uid){
   let monthsMap = {}, profile = null, gotMonths = false;
   const rebuild = () => {
     if(Store.dirty || Store.busy) return; // 저장 중인 내 변경을 덮어쓰지 않기
-    const raw = {entries:[], practice:{}, settings: profile && profile.settings};
+    const raw = {entries:[], practice:{}, settings: profile && profile.settings, books: profile && profile.books};
     Object.values(monthsMap).forEach(b => { if(b){ (b.entries||[]).forEach(e => raw.entries.push(e)); Object.assign(raw.practice, b.practice||{}); } });
     const keepToday = state.practice[ymd(today())];
     state = normalize(raw);
@@ -307,7 +332,7 @@ function startDb(db, uid){
   };
   db.doc(base+'/profile').onSnapshot(snap => {
     profile = snap.exists ? snap.data() : null;
-    Store.written.profile = JSON.stringify({settings: normalize(profile).settings});
+    { const np = normalize(profile); Store.written.profile = JSON.stringify({settings: np.settings, books: np.books}); }
     rebuild();
   }, onDbError);
   db.collection(base+'/profile/months').onSnapshot(snap => {
@@ -370,8 +395,73 @@ function armDelete(btn, onConfirm){
   };
 }
 
+// ---------- 책 ----------
+const bookById = id => state.books.find(b => b.id === id);
+const bookName = e => e.bookId ? ((bookById(e.bookId)||{}).name || e.book) : '';
+const label = e => (bookName(e) ? bookName(e)+' ' : '') + e.text;
+// 기록 한 줄: [책] 내용 · n회독
+function fillEntry(el, e){
+  el.textContent = '';
+  const n = bookName(e);
+  if(n){ const t = document.createElement('span'); t.className = 'bk'; t.textContent = n; el.appendChild(t); }
+  el.appendChild(document.createTextNode(e.text));
+  if(e.round){ const r = document.createElement('span'); r.className = 'rd'; r.textContent = e.round+'회독'; el.appendChild(r); }
+}
+let selBook = null;
+function defaultBook(){
+  if(selBook === '' || bookById(selBook)) return selBook;
+  const last = state.entries.slice().reverse().find(e => e.bookId && bookById(e.bookId));
+  return last ? last.bookId : (state.books[0] ? state.books[0].id : '');
+}
+// 두 번 눌러야 실행되는 버튼
+function armTwice(btn, armedText, onConfirm){
+  const orig = btn.textContent;
+  btn.onclick = () => {
+    if(btn.dataset.armed){ onConfirm(); return; }
+    btn.dataset.armed = '1'; btn.textContent = armedText; btn.classList.add('danger');
+    setTimeout(() => { delete btn.dataset.armed; btn.textContent = orig; btn.classList.remove('danger'); }, 3000);
+  };
+}
+function renderBooks(){
+  const ul = $('bookList'); ul.innerHTML = '';
+  if(!state.books.length){ ul.innerHTML = '<li class="empty">공부 중인 책을 추가하면 기록할 때 고를 수 있고, 몇 번 반복했는지 세어 줘요.</li>'; return; }
+  state.books.forEach(bk => {
+    const cur = bk.done + 1;
+    const mine = state.entries.filter(e => e.bookId === bk.id);
+    const now = mine.filter(e => e.round === cur);
+    const last = mine[mine.length-1];
+    const li = document.createElement('li'); li.className = 'book';
+    li.innerHTML = `<div class="body"><div class="nm"></div><div class="sub"></div><div class="rounds"></div></div>
+      <div class="acts"><button class="btn ghost sm fin">회독 완료</button><button class="del" title="책 삭제">×</button></div>`;
+    li.querySelector('.nm').textContent = bk.name;
+    li.querySelector('.sub').textContent = `지금 ${cur}회독 중 · 이번 회독 ${new Set(now.map(e=>e.date)).size}일 공부` + (last ? ` · 마지막: ${last.text}` : '');
+    const rd = li.querySelector('.rounds');
+    for(let k=0;k<Math.min(bk.done,10);k++){ const i = document.createElement('i'); i.className = 'on'; rd.appendChild(i); }
+    if(bk.done > 10) rd.appendChild(document.createTextNode('+'+(bk.done-10)));
+    rd.appendChild(document.createTextNode(bk.done ? ` ${bk.done}회독 완료` : '아직 1회독 전'));
+    if(bk.done){
+      const undo = document.createElement('button'); undo.className = 'del'; undo.style.fontSize = '12px'; undo.textContent = '되돌리기';
+      undo.onclick = () => { bk.done--; save(); renderAll(); toast(`${bk.name}: ${bk.done+1}회독 중으로 되돌렸어요.`); };
+      rd.appendChild(undo);
+    }
+    armTwice(li.querySelector('.fin'), cur+'회독 완료?', () => { bk.done++; save(); renderAll(); toast(`🎉 ${bk.name} ${bk.done}회독 완료! 이제 ${bk.done+1}회독이에요.`); });
+    armDelete(li.querySelector('.del'), () => { state.books = state.books.filter(x => x.id !== bk.id); if(selBook===bk.id) selBook = null; save(); renderAll(); toast('책을 목록에서 뺐어요. 지난 기록은 그대로 남아요.'); });
+    ul.appendChild(li);
+  });
+}
+$('bookAdd').onclick = () => {
+  const name = $('bookName').value.trim();
+  if(!name){ $('bookName').focus(); return; }
+  if(state.books.some(b => b.name === name)){ toast('이미 있는 책이에요.'); return; }
+  const bk = {id:newId(), name, done:0};
+  state.books.push(bk); selBook = bk.id;
+  $('bookName').value = ''; save(); renderAll(); toast(`${name}을(를) 추가했어요.`);
+};
+$('bookName').addEventListener('keydown', e => { if(e.key==='Enter' && !e.isComposing) $('bookAdd').click(); });
+
 // ---------- 기록 탭 ----------
 function renderRecord(){
+  renderBooks();
   $('weekendNote').hidden = !isReviewDay(today());
   const dc = $('dayChips'); dc.innerHTML = '';
   weekStudyDates(mondayOf(today())).forEach(s => {
@@ -381,28 +471,43 @@ function renderRecord(){
     b.onclick = () => { selDate = s; renderRecord(); };
     dc.appendChild(b);
   });
+  const cur = defaultBook();
+  const bc = $('bookChips'); bc.innerHTML = '';
+  [...state.books.map(b => [b.id, b.name]), ['', '책 없이']].forEach(([id, name]) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (id===cur ? ' on':'');
+    b.textContent = name;
+    b.onclick = () => { selBook = id; renderRecord(); $('text').focus(); };
+    bc.appendChild(b);
+  });
+  const pool = state.entries.filter(e => cur ? e.bookId===cur : !e.bookId);
   const dl = $('pastTexts'); dl.innerHTML = '';
-  [...new Set(state.entries.slice().reverse().map(e => e.text))].slice(0,30).forEach(t => {
+  [...new Set(pool.slice().reverse().map(e => e.text))].slice(0,30).forEach(t => {
     const o = document.createElement('option'); o.value = t; dl.appendChild(o);
   });
+  const lastOne = pool[pool.length-1];
+  $('text').placeholder = cur ? '예: D1~2' : '예: 미드 프렌즈 1화';
+  $('lastHint').textContent = cur && lastOne ? `지난번: ${lastOne.text} (${md(parse(lastOne.date))})` : (!state.books.length ? '위에서 책을 추가하면 책을 골라 기록할 수 있어요.' : '');
   const d = parse(selDate), list = entriesOn(selDate);
   $('listTitle').textContent = `${DAYS[d.getDay()]}요일 (${md(d)}) 기록 · ${list.length}개`;
   const ul = $('dayList'); ul.innerHTML = '';
-  if(!list.length){ ul.innerHTML = '<li class="empty">아직 기록이 없어요. + 를 눌러 오늘 공부한 것을 적어 보세요.</li>'; return; }
+  if(!list.length){ ul.innerHTML = '<li class="empty">아직 기록이 없어요. 책을 고르고 공부한 내용을 적어 보세요.</li>'; return; }
   list.forEach(e => {
     const li = document.createElement('li');
     li.innerHTML = `<div class="body"></div><button class="del" title="삭제">×</button>`;
-    li.querySelector('.body').textContent = e.text;
+    fillEntry(li.querySelector('.body'), e);
     armDelete(li.querySelector('.del'), () => { state.entries = state.entries.filter(x => x.id !== e.id); save(); renderAll(); });
     ul.appendChild(li);
   });
 }
-$('plusBtn').onclick = () => { const r = $('addRow'); r.hidden = !r.hidden; if(!r.hidden) $('text').focus(); };
 $('addBtn').onclick = () => {
   const text = $('text').value.trim();
   if(!text){ $('text').focus(); return; }
-  state.entries.push({id:newId(), date:selDate, text, reviewed:false, reviewedAt:null});
-  save(); $('text').value = ''; $('addRow').hidden = true; renderAll();
+  const bk = bookById(defaultBook());
+  const e = {id:newId(), date:selDate, text, reviewed:false, reviewedAt:null};
+  if(bk){ e.bookId = bk.id; e.book = bk.name; e.round = bk.done + 1; }
+  state.entries.push(e);
+  save(); $('text').value = ''; $('text').blur(); renderAll();
   toast('기록했어요.');
 };
 $('text').addEventListener('keydown', e => { if(e.key==='Enter' && !e.isComposing) $('addBtn').click(); });
@@ -418,9 +523,9 @@ function itemLi(e){
   if(e.reviewed) li.classList.add('checked');
   li.innerHTML = `<input type="checkbox"><div class="body"></div>`;
   const cb = li.querySelector('input'); cb.checked = e.reviewed;
-  cb.setAttribute('aria-label', e.text + ' 복습 완료');
+  cb.setAttribute('aria-label', label(e) + ' 복습 완료');
   cb.onchange = () => { e.reviewed = cb.checked; e.reviewedAt = cb.checked ? ymd(today()) : null; save(); renderAll(); };
-  li.querySelector('.body').textContent = e.text;
+  fillEntry(li.querySelector('.body'), e);
   return li;
 }
 function renderReview(){
