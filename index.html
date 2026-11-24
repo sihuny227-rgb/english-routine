@@ -84,6 +84,9 @@ textarea{min-height:64px;resize:vertical}
 .book .acts{display:flex;gap:6px;flex:none;align-items:center}
 .bk{display:inline-block;font-size:12px;background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:1px 7px;margin-right:6px;vertical-align:1px}
 .rd{color:var(--muted);font-size:12px;margin-left:6px;white-space:nowrap}
+.master{margin-top:16px;padding-top:12px;border-top:1px dashed var(--line)}
+.master h3{margin:0 0 4px;color:var(--ink);font-size:15px}
+.master .nm::before{content:"🏆 "}
 ul.items{list-style:none;margin:0;padding:0}
 ul.items li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
 ul.items li:first-child{border-top:0}
@@ -134,6 +137,10 @@ input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--ac
     <div class="card">
       <h2>공부 중인 책</h2>
       <ul class="items" id="bookList"></ul>
+      <div class="master" id="masterBox" hidden>
+        <h3>10회독 마스터</h3>
+        <ul class="items" id="masterList"></ul>
+      </div>
       <div class="row" style="margin-top:10px">
         <input id="bookName" placeholder="책 이름 (예: 캘리의 루틴)" autocomplete="off" style="flex:3 1 200px">
         <button class="btn ghost" id="bookAdd">책 추가</button>
@@ -252,11 +259,16 @@ let toastT;
 function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'), 2800); }
 
 // ---------- 상태 ----------
+const MASTER_ROUNDS = 10; // 이만큼 회독하면 '10회독 마스터'로 옮겨요
 let state = {entries:[], books:[], practice:{}, settings:{...DEFAULT_SETTINGS}};
 function normalize(s){
   const o = {entries:[], books:[], practice:{}, settings:{...DEFAULT_SETTINGS}};
   if(s && Array.isArray(s.books)) o.books = s.books.filter(b => b && typeof b.name==='string' && b.name.trim())
-    .map(b => ({id:String(b.id||newId()), name:b.name.trim(), done:Math.max(0, parseInt(b.done)||0)}));
+    .map(b => {
+      const o = {id:String(b.id||newId()), name:b.name.trim(), done:Math.max(0, parseInt(b.done)||0)};
+      if(o.done >= MASTER_ROUNDS) o.masteredAt = /^\d{4}-\d\d-\d\d$/.test(b.masteredAt) ? b.masteredAt : ymd(today());
+      return o;
+    });
   if(s && Array.isArray(s.entries)) o.entries = s.entries.filter(e => e && typeof e.date==='string' && typeof e.text==='string')
     .map(e => {
       const x = {id: String(e.id||newId()), date:e.date, text:(e.cat ? e.cat+' ' : '')+e.text, reviewed:!!e.reviewed, reviewedAt:e.reviewedAt||null};
@@ -397,6 +409,9 @@ function armDelete(btn, onConfirm){
 
 // ---------- 책 ----------
 const bookById = id => state.books.find(b => b.id === id);
+const isMastered = b => b.done >= MASTER_ROUNDS;
+const activeBooks = () => state.books.filter(b => !isMastered(b));
+const activeById = id => activeBooks().find(b => b.id === id);
 const bookName = e => e.bookId ? ((bookById(e.bookId)||{}).name || e.book) : '';
 const label = e => (bookName(e) ? bookName(e)+' ' : '') + e.text;
 // 기록 한 줄: [책] 내용 · n회독
@@ -409,9 +424,10 @@ function fillEntry(el, e){
 }
 let selBook = null;
 function defaultBook(){
-  if(selBook === '' || bookById(selBook)) return selBook;
-  const last = state.entries.slice().reverse().find(e => e.bookId && bookById(e.bookId));
-  return last ? last.bookId : (state.books[0] ? state.books[0].id : '');
+  if(selBook === '' || activeById(selBook)) return selBook;
+  const last = state.entries.slice().reverse().find(e => e.bookId && activeById(e.bookId));
+  const act = activeBooks();
+  return last ? last.bookId : (act[0] ? act[0].id : '');
 }
 // 두 번 눌러야 실행되는 버튼
 function armTwice(btn, armedText, onConfirm){
@@ -423,9 +439,10 @@ function armTwice(btn, armedText, onConfirm){
   };
 }
 function renderBooks(){
+  renderMasters();
   const ul = $('bookList'); ul.innerHTML = '';
-  if(!state.books.length){ ul.innerHTML = '<li class="empty">공부 중인 책을 추가하면 기록할 때 고를 수 있고, 몇 번 반복했는지 세어 줘요.</li>'; return; }
-  state.books.forEach(bk => {
+  if(!activeBooks().length){ ul.innerHTML = state.books.length ? '<li class="empty">지금 공부 중인 책이 없어요. 새 책을 추가해 보세요.</li>' : '<li class="empty">공부 중인 책을 추가하면 기록할 때 고를 수 있고, 몇 번 반복했는지 세어 줘요.</li>'; return; }
+  activeBooks().forEach(bk => {
     const cur = bk.done + 1;
     const mine = state.entries.filter(e => e.bookId === bk.id);
     const now = mine.filter(e => e.round === cur);
@@ -444,15 +461,35 @@ function renderBooks(){
       undo.onclick = () => { bk.done--; save(); renderAll(); toast(`${bk.name}: ${bk.done+1}회독 중으로 되돌렸어요.`); };
       rd.appendChild(undo);
     }
-    armTwice(li.querySelector('.fin'), cur+'회독 완료?', () => { bk.done++; save(); renderAll(); toast(`🎉 ${bk.name} ${bk.done}회독 완료! 이제 ${bk.done+1}회독이에요.`); });
+    armTwice(li.querySelector('.fin'), cur+'회독 완료?', () => {
+      bk.done++;
+      if(isMastered(bk)){ bk.masteredAt = ymd(today()); if(selBook===bk.id) selBook = null; }
+      save(); renderAll();
+      toast(isMastered(bk) ? `🏆 ${bk.name} ${MASTER_ROUNDS}회독 달성! 10회독 마스터로 옮겼어요.` : `🎉 ${bk.name} ${bk.done}회독 완료! 이제 ${bk.done+1}회독이에요.`);
+    });
     armDelete(li.querySelector('.del'), () => { state.books = state.books.filter(x => x.id !== bk.id); if(selBook===bk.id) selBook = null; save(); renderAll(); toast('책을 목록에서 뺐어요. 지난 기록은 그대로 남아요.'); });
+    ul.appendChild(li);
+  });
+}
+function renderMasters(){
+  const done = state.books.filter(isMastered);
+  $('masterBox').hidden = !done.length;
+  const ul = $('masterList'); ul.innerHTML = '';
+  done.forEach(bk => {
+    const days = new Set(state.entries.filter(e => e.bookId === bk.id).map(e => e.date)).size;
+    const li = document.createElement('li'); li.className = 'book';
+    li.innerHTML = `<div class="body"><div class="nm"></div><div class="sub"></div></div><div class="acts"><button class="btn ghost sm back">되돌리기</button></div>`;
+    li.querySelector('.nm').textContent = bk.name;
+    li.querySelector('.sub').textContent = `${MASTER_ROUNDS}회독 완료 · ${md(parse(bk.masteredAt))} 마스터` + (days ? ` · 공부한 날 ${days}일` : '');
+    armTwice(li.querySelector('.back'), '되돌릴까요?', () => { bk.done = MASTER_ROUNDS - 1; delete bk.masteredAt; save(); renderAll(); toast(`${bk.name}을(를) ${MASTER_ROUNDS}회독 중으로 되돌렸어요.`); });
     ul.appendChild(li);
   });
 }
 $('bookAdd').onclick = () => {
   const name = $('bookName').value.trim();
   if(!name){ $('bookName').focus(); return; }
-  if(state.books.some(b => b.name === name)){ toast('이미 있는 책이에요.'); return; }
+  const dup = state.books.find(b => b.name === name);
+  if(dup){ toast(isMastered(dup) ? '이미 10회독 마스터한 책이에요.' : '이미 있는 책이에요.'); return; }
   const bk = {id:newId(), name, done:0};
   state.books.push(bk); selBook = bk.id;
   $('bookName').value = ''; save(); renderAll(); toast(`${name}을(를) 추가했어요.`);
@@ -473,7 +510,7 @@ function renderRecord(){
   });
   const cur = defaultBook();
   const bc = $('bookChips'); bc.innerHTML = '';
-  [...state.books.map(b => [b.id, b.name]), ['', '책 없이']].forEach(([id, name]) => {
+  [...activeBooks().map(b => [b.id, b.name]), ['', '책 없이']].forEach(([id, name]) => {
     const b = document.createElement('button');
     b.className = 'chip' + (id===cur ? ' on':'');
     b.textContent = name;
@@ -487,7 +524,7 @@ function renderRecord(){
   });
   const lastOne = pool[pool.length-1];
   $('text').placeholder = cur ? '예: D1~2' : '예: 미드 프렌즈 1화';
-  $('lastHint').textContent = cur && lastOne ? `지난번: ${lastOne.text} (${md(parse(lastOne.date))})` : (!state.books.length ? '위에서 책을 추가하면 책을 골라 기록할 수 있어요.' : '');
+  $('lastHint').textContent = cur && lastOne ? `지난번: ${lastOne.text} (${md(parse(lastOne.date))})` : (!activeBooks().length ? '위에서 책을 추가하면 책을 골라 기록할 수 있어요.' : '');
   const d = parse(selDate), list = entriesOn(selDate);
   $('listTitle').textContent = `${DAYS[d.getDay()]}요일 (${md(d)}) 기록 · ${list.length}개`;
   const ul = $('dayList'); ul.innerHTML = '';
@@ -503,7 +540,7 @@ function renderRecord(){
 $('addBtn').onclick = () => {
   const text = $('text').value.trim();
   if(!text){ $('text').focus(); return; }
-  const bk = bookById(defaultBook());
+  const bk = activeById(defaultBook());
   const e = {id:newId(), date:selDate, text, reviewed:false, reviewedAt:null};
   if(bk){ e.bookId = bk.id; e.book = bk.name; e.round = bk.done + 1; }
   state.entries.push(e);
